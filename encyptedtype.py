@@ -138,7 +138,7 @@ storage = Storage(engine=engine, prefix='')
 '''
 encryptedDefintion = {
     "ssn": {
-        "key": "arn:aws:kms:us-west-1:396527728813:key/456f9dad-84f7-4964-bb98-eae1f95a86e9",
+        "key": "",
         "engine": AWS_AES_Engine
     }
 }
