@@ -46,10 +46,6 @@ class Mapper(object):
     def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None, encrypted_definitions=None):
         """Convert descriptor to SQL
         """
-
-        print("convert_descriptor", descriptor['fields'])
-        print("encrypted_definitions", encrypted_definitions)
-
         # Prepare
         columns = []
         indexes = []
