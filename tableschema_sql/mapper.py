@@ -12,6 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy import CheckConstraint as Check
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 
+from sqlalchemy_utils import EncryptedType
 
 # Module API
 
@@ -30,9 +31,24 @@ class Mapper(object):
         """
         return self.__prefix + bucket
 
-    def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None):
+    def has_key_value(self, descriptor, field_name, key_name):
+        for field in descriptor['fields']:
+            #print(field)
+            #print(field_name)
+            if field["name"] == field_name:
+                try:
+                    return field[key_name]
+                except KeyError:
+                    return False
+
+        return False
+
+    def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None, encrypted_definitions=None):
         """Convert descriptor to SQL
         """
+
+        print("convert_descriptor", descriptor['fields'])
+        print("encrypted_definitions", encrypted_definitions)
 
         # Prepare
         columns = []
@@ -75,10 +91,19 @@ class Mapper(object):
                         checks.append(Check('"%s" REGEXP \'%s\'' % (field.name, value)))
                 elif name == 'enum':
                     column_type = sa.Enum(*value, name='%s_%s_enum' % (table_name, field.name))
-            column = sa.Column(*([field.name, column_type] + checks),
-                nullable=nullable, comment=comment, unique=unique)
-            columns.append(column)
-            column_mapping[field.name] = column
+
+
+            if self.has_key_value(descriptor, field.name, 'encrypted'):
+                column = sa.Column(*([field.name, EncryptedType(column_type, encrypted_definitions[field.name]["key"], encrypted_definitions[field.name]["engine"], 'pkcs5')] + checks),
+                    nullable=nullable, comment=comment, unique=unique)
+                columns.append(column)
+                column_mapping[field.name] = column
+            else:
+                column = sa.Column(*([field.name, column_type] + checks),
+                    nullable=nullable, comment=comment, unique=unique)
+                columns.append(column)
+                column_mapping[field.name] = column
+
 
         # Primary key
         pk = descriptor.get('primaryKey', None)
