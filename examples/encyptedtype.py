@@ -52,7 +52,7 @@ class AWS_AES_Engine(EncryptionDecryptionBaseEngine):
         self.master_key_provider = aws_encryption_sdk.KMSMasterKeyProvider(**self.kms_kwargs)
 
     def _set_padding_mechanism(self, padding_mechanism=None):
-        print("padding_mechanism")
+        self.padding_mechanism = padding_mechanism
 
     def encrypt(self, value):
         ciphertext, encryptor_header = aws_encryption_sdk.encrypt(
@@ -125,8 +125,8 @@ class AES_GCM_Engine(EncryptionDecryptionBaseEngine):
                 raise InvalidCiphertextError()
         return decrypted
 
-print(AWS_AES_Engine)
-print(AES_GCM_Engine)
+# print(AWS_AES_Engine)
+# print(AES_GCM_Engine)
 
 # Engine
 engine = create_engine('postgresql://postgres:postgres@localhost:5432/postgres')
@@ -142,9 +142,14 @@ encryptedDefintion = {
         "engine": AWS_AES_Engine
     }
 }
+"*": {
+    "key": "G8Zkf^94Ra505tHliIxAMZy9GJObEyF1",
+    "engine": AES_GCM_Engine
+}
 '''
+
 encryptedDefintion = {
-    "ssn": {
+    "*": {
         "key": "G8Zkf^94Ra505tHliIxAMZy9GJObEyF1",
         "engine": AES_GCM_Engine
     }
@@ -169,7 +174,12 @@ records_schema = """
         {
             "name": "ssn",
             "type": "string",
-            "encrypted": true
+            "protected": true
+        },
+        {
+            "name": "password",
+            "type": "string",
+            "protected": true
         }
     ]
 }
@@ -178,7 +188,7 @@ records_schema = """
 storage.create(['records'], [json.loads(records_schema)], encrypted_definitions=encryptedDefintion)
 
 records_data = [
-    [ 1, "John", "123456789" ]
+    [ 1, "John", "123456789", "mypassword" ]
 ]
 
 storage.write('records', records_data)
