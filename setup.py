@@ -23,7 +23,6 @@ NAME = PACKAGE.replace('_', '-')
 INSTALL_REQUIRES = [
     'six>=1.9',
     'sqlalchemy>=1.9',
-    'sqlalchemy_utils',
     'pybloom_live>=2.2',
     'tabulator>=1.1',
     'tableschema>=1.0',
