@@ -149,9 +149,11 @@ encryptedDefintion = {
 '''
 
 encryptedDefintion = {
-    "*": {
-        "key": "G8Zkf^94Ra505tHliIxAMZy9GJObEyF1",
-        "engine": AES_GCM_Engine
+    "records": {
+        "*": {
+            "key": "G8Zkf^94Ra505tHliIxAMZy9GJObEyF1",
+            "engine": AES_GCM_Engine
+        }
     }
 }
 

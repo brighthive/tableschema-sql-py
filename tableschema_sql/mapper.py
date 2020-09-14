@@ -42,10 +42,15 @@ class Mapper(object):
 
         return False
 
-    def get_encryption_definition_for_field(self, encrypted_definitions, field_name):
+    def get_encryption_definition_for_field(self, encrypted_definitions, table_name, field_name):
         # Will grab the encryption key and engine from the definitions
         try:
-            return encrypted_definitions[field_name]
+            return encrypted_definitions[table_name][field_name]
+        except KeyError:
+            pass
+
+        try:
+            return encrypted_definitions[table_name]["*"]
         except KeyError:
             pass
 
@@ -101,7 +106,7 @@ class Mapper(object):
 
             # defines the column
             if self.has_key_value(descriptor, field.name, 'protected'):
-                encryption_definition = self.get_encryption_definition_for_field(encrypted_definitions, field.name)
+                encryption_definition = self.get_encryption_definition_for_field(encrypted_definitions, bucket, field.name)
                 column = sa.Column(*([field.name, EncryptedType(column_type, encryption_definition["key"], encryption_definition["engine"], 'pkcs5')] + checks),
                     nullable=nullable, comment=comment, unique=unique)
                 columns.append(column)
