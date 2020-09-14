@@ -13,6 +13,7 @@ from sqlalchemy import CheckConstraint as Check
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 
 from sqlalchemy_utils import EncryptedType
+from tableschema.exceptions import ValidationError
 
 # Module API
 
@@ -51,7 +52,7 @@ class Mapper(object):
         try:
             return encrypted_definitions["*"]
         except KeyError:
-            raise Exception('Missing protected field key and engine class. Please define an engine/key for field or default engine.')
+            raise ValidationError('Missing protected field key and engine class. Please define an engine/key for field or default engine.')
 
     def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None, encrypted_definitions=None):
         """Convert descriptor to SQL
