@@ -33,8 +33,6 @@ class Mapper(object):
 
     def has_key_value(self, descriptor, field_name, key_name):
         for field in descriptor['fields']:
-            #print(field)
-            #print(field_name)
             if field["name"] == field_name:
                 try:
                     return field[key_name]
@@ -42,6 +40,18 @@ class Mapper(object):
                     return False
 
         return False
+
+    def get_encryption_definition_for_field(self, encrypted_definitions, field_name):
+        # Will grab the encryption key and engine from the definitions
+        try:
+            return encrypted_definitions[field_name]
+        except KeyError:
+            pass
+
+        try:
+            return encrypted_definitions["*"]
+        except KeyError:
+            raise Exception('Missing protected field key and engine class. Please define an engine/key for field or default engine.')
 
     def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None, encrypted_definitions=None):
         """Convert descriptor to SQL
@@ -88,9 +98,10 @@ class Mapper(object):
                 elif name == 'enum':
                     column_type = sa.Enum(*value, name='%s_%s_enum' % (table_name, field.name))
 
-
-            if self.has_key_value(descriptor, field.name, 'encrypted'):
-                column = sa.Column(*([field.name, EncryptedType(column_type, encrypted_definitions[field.name]["key"], encrypted_definitions[field.name]["engine"], 'pkcs5')] + checks),
+            # defines the column
+            if self.has_key_value(descriptor, field.name, 'protected'):
+                encryption_definition = self.get_encryption_definition_for_field(encrypted_definitions, field.name)
+                column = sa.Column(*([field.name, EncryptedType(column_type, encryption_definition["key"], encryption_definition["engine"], 'pkcs5')] + checks),
                     nullable=nullable, comment=comment, unique=unique)
                 columns.append(column)
                 column_mapping[field.name] = column
