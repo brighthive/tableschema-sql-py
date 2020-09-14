@@ -93,7 +93,7 @@ class Storage(tableschema.Storage):
                 buckets.append(bucket)
         return buckets
 
-    def create(self, bucket, descriptor, force=False, indexes_fields=None):
+    def create(self, bucket, descriptor, force=False, indexes_fields=None, encrypted_definitions=None):
         """Create bucket
 
         # Arguments
@@ -132,7 +132,7 @@ class Storage(tableschema.Storage):
             table_name = self.__mapper.convert_bucket(bucket)
             autoincrement = self.__get_autoincrement_for_bucket(bucket)
             columns, constraints, indexes, fallbacks, table_comment = self.__mapper \
-                .convert_descriptor(bucket, descriptor, index_fields, autoincrement)
+                .convert_descriptor(bucket, descriptor, index_fields, autoincrement, encrypted_definitions)
             Table(table_name, self.__metadata, *(columns + constraints + indexes),
                   comment=table_comment)
             self.__descriptors[bucket] = descriptor

@@ -12,6 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy import CheckConstraint as Check
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
 
+from sqlalchemy_utils import EncryptedType
+from tableschema.exceptions import ValidationError
 
 # Module API
 
@@ -30,10 +32,36 @@ class Mapper(object):
         """
         return self.__prefix + bucket
 
-    def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None):
+    def has_key_value(self, descriptor, field_name, key_name):
+        for field in descriptor['fields']:
+            if field["name"] == field_name:
+                try:
+                    return field[key_name]
+                except KeyError:
+                    return False
+
+        return False
+
+    def get_encryption_definition_for_field(self, encrypted_definitions, table_name, field_name):
+        # Will grab the encryption key and engine from the definitions
+        try:
+            return encrypted_definitions[table_name][field_name]
+        except KeyError:
+            pass
+
+        try:
+            return encrypted_definitions[table_name]["*"]
+        except KeyError:
+            pass
+
+        try:
+            return encrypted_definitions["*"]
+        except KeyError:
+            raise ValidationError('Missing protected field key and engine class. Please define an engine/key for field or default engine.')
+
+    def convert_descriptor(self, bucket, descriptor, index_fields=[], autoincrement=None, encrypted_definitions=None):
         """Convert descriptor to SQL
         """
-
         # Prepare
         columns = []
         indexes = []
@@ -75,10 +103,20 @@ class Mapper(object):
                         checks.append(Check('"%s" REGEXP \'%s\'' % (field.name, value)))
                 elif name == 'enum':
                     column_type = sa.Enum(*value, name='%s_%s_enum' % (table_name, field.name))
-            column = sa.Column(*([field.name, column_type] + checks),
-                nullable=nullable, comment=comment, unique=unique)
-            columns.append(column)
-            column_mapping[field.name] = column
+
+            # defines the column
+            if self.has_key_value(descriptor, field.name, 'protected'):
+                encryption_definition = self.get_encryption_definition_for_field(encrypted_definitions, bucket, field.name)
+                column = sa.Column(*([field.name, EncryptedType(column_type, encryption_definition["key"], encryption_definition["engine"], 'pkcs5')] + checks),
+                    nullable=nullable, comment=comment, unique=unique)
+                columns.append(column)
+                column_mapping[field.name] = column
+            else:
+                column = sa.Column(*([field.name, column_type] + checks),
+                    nullable=nullable, comment=comment, unique=unique)
+                columns.append(column)
+                column_mapping[field.name] = column
+
 
         # Primary key
         pk = descriptor.get('primaryKey', None)
